@@ -22,9 +22,9 @@ from itertools import chain
 #RGB colors
 white = (255, 255, 255)
 black = (0, 0, 0)
-gray = (47, 79, 79)
 
 clock = pg.time.Clock()
+tick = 20
 window_title = pg.display.set_caption('gol')
 dw = 1000 # display width
 dh = 1000 # display height
@@ -32,11 +32,11 @@ dh = 1000 # display height
 gameDisplay = pg.display.set_mode((dw, dh))
 
 
-num_cul = 30
-num_row = 30
+num_cul = 40
+num_row = 40
 
 cul_size = dw / num_cul
-row_size = dh / num_row
+row_size = dh/ num_row
 
 
 class Board:
@@ -47,21 +47,21 @@ class Board:
 		self.num_row = num_row
 		#game_state dictionary
 		self.game_state = {}
-		coordinates = self.get_coordinates()
+		grid = self.get_grid()
 		
 		# initialize game_state dict
-		for i in coordinates:
-			self.game_state[i] = Cell(x, y)
+		for i in grid:
+			self.game_state[i] = Cell(i[0], i[1], self)
 
 		# initialize drawing board
 
-	def get_coordinates(self):
+	def get_grid(self):
 	# in this case y is goes down (like -y)
-		coordinates_list = [[(x,y) for x in range(self.num_cul)] for y in range(self.num_row)]
+		grid_list = [[(x,y) for x in range(self.num_cul)] for y in range(self.num_row)]
 		# merging lists in coordinates_list(s)
-		coordinates = list(chain.from_iterable(coordinates_list))
+		grid = list(chain.from_iterable(grid_list))
 
-		return coordinates
+		return grid
 
 	
 	
@@ -103,31 +103,34 @@ class Board:
 
 
 class Cell:
-	def __init__(self, x, y):
+	def __init__(self, x, y, cls):
 		self.x = x
 		self.y = y
 		self.state = 0
+		self.game_state = cls.game_state
 		# draw cell on the board
+		self.rect = pg.draw.rect(gameDisplay, white, (cul_size*x, row_size*y, cul_size, row_size))
 
-
-	def __repr__(self):
-		pass
-
-
-	def update(self):
+	def update_state(self):
 		# normalize the points
-		x, y = self.get_floor_pos(self.x/cul_size, self.y/row_size )
+		#x, y = self.get_floor_pos(self.x/cul_size, self.y/row_size )
 		# WTF DO I DO ABOUT THIS BOARD. ...
-		value = .game_state.get((x,y))
-		s, rect = , value[1]
-		print(s)
-		updated_state = (s + 1) % 2
-		print('rect:', rect)
-		if updated_state == 1:
+		self.state = (self.state + 1) % 2 #ie. [0, 1] as possible states
+		if self.state == 1:
 		# fill with gray
 			color = black
 
 			#rect.fill(gray)
+	
+		elif self.state == 0:
+			# fill with white
+			color = white
+			#print('{} is white!'.format((x,y)))
+			#rect.fill(white)
+
+		gameDisplay.fill(color, self.rect) # color, surface
+		print('cell rect after filling with color:', (color,self.rect))
+
 	@staticmethod
 	def get_floor_pos(x,y):
 		xf, yf = floor(x), floor(y)
@@ -138,19 +141,21 @@ class Cell:
 			yf = y-1
 	
 		return xf,yf
-	
+
+	# this method needs to be thought out compeletely, in addition to solving - 
+	# the reference to the game_state(grid) dictionary
 	@classmethod
-	def get_neighbors(cls, x, y):
+	def get_neighbors(x, y):
 		# game state
-		gs = cls.game_state  
+		gs = self.game_state
 		"""
 		return a list of lists of the neighbors of a given point
 		"""
 		
 		neighbors_list = [
-		gs(cul_size*(x - 1), row_size*(y + 1))[0], gs(cul_size*x, row_size*(y + 1))[0], gs(cul_size*(x + 1), row_size*(y + 1))[0], # up-left, up, up-right
-		gs(cul_size*(x - 1), row_size*y)[0],                                                     gs(self.cul_size*(x + 1), self.row_size*(y))[0], # left,right
-		gs(cul_size*(x - 1), row_size*(y-1))[0], gs(cul_size*x, row_size*(y-1))[0],    gs(cul_size*(x+1), row_size*(y-1))[0] # down-left, down, down-right
+		gs(cul_size*(x - 1), row_size*(y + 1)).state, gs(cul_size*x, row_size*(y + 1)).state, gs(cul_size*(x + 1), row_size*(y + 1)).state, # up-left, up, up-right
+		gs(cul_size*(x - 1), row_size*y).state,                                                     gs(self.cul_size*(x + 1), self.row_size*(y)).state, # left,right
+		gs(cul_size*(x - 1), row_size*(y-1)).state, gs(cul_size*x, row_size*(y-1)).state,    gs(cul_size*(x+1), row_size*(y-1)).state # down-left, down, down-right
 		]
 		# for coordinate in coordinates: self.game_state.get(coordinate(s))
 		print('neightbor list: ', neighbors_list)
@@ -160,27 +165,54 @@ class Cell:
 				num_neighbors += 1
 		return num_neighbors
 	
-	
-		elif updated_state == 0:
-			# fill with white
-			color = white
-			#print('{} is white!'.format((x,y)))
-			#rect.fill(white)
 
 
-		cls.game_state[(x,y)] = (updated_state, rect)
-		x = gameDisplay.fill(color, rect)
-		print(x)
-		print('created rect!: ', rect, color)
 
-def board_setup():
+
+
+def text_objects(text, font):
+    textSurface = font.render(text, True, black)
+    return textSurface, textSurface.get_rect()
+ 
+def message_display(text):
+    largeText = pygame.font.Font('freesansbold.ttf',115)
+    TextSurf, TextRect = text_objects(text, largeText)
+    TextRect.center = ((display_width/2),(display_height/2))
+    gameDisplay.blit(TextSurf, TextRect)
+
+
+def game_intro():
+	intro = True
+	#1. add the text rect thingy
+	#2. add logic to when the rect thingy is clicked
+	intro_board = Board(cul_size, row_size, num_cul, num_row)
+	while intro:
+		for event in pg.event.get():
+			if event.type == pg.QUIT:
+				intro = False
+				pg.quit()
+				exit()
+			
+			if event.type == pg.MOUSEBUTTONUP:
+				
+				xmpos, ympos = pg.mouse.get_pos()
+				print('clicked at :', (xmpos,ympos))
+
+				# update game_state
+				x, y = Cell.get_floor_pos(xmpos/cul_size, ympos/row_size)
+				cell_obj = intro_board.game_state.get((x,y))
+				cell_obj.update_state()
+				
+				# handle "starting" the game
+		
+		pg.display.update()
+		clock.tick(tick)
+	return intro_board
+
+
+def game_loop(intro_board):
+	board = intro_board
 	running = True
-	
-	for event in pg.event.get
-def game_loop():
-	running = True
-	pg.init()
-	board = Board(cul_size, row_size, num_cul, num_row)
 	
 	while running:
 		#gameDisplay.fill(white)
@@ -190,21 +222,17 @@ def game_loop():
 				pg.quit()
 				exit()
 			
-			if event.type == pg.MOUSEBUTTONUP:
-				
-				xmpos, ympos = pg.mouse.get_pos()
-				print('clicked at :', (xmpos,ympos))
-				# call function to handle all this shit.
-				board.draw(xmpos, ympos)
-				
+			
 		
-		#pg.update()
+		board.update()
 
 		pg.display.update()
-		clock.tick(20)
+		clock.tick(tick)
 
 	
 
 
 if __name__ == '__main__':
-	game_loop()
+	pg.init()
+	intro_board = game_intro()
+	game_loop(intro_board)
