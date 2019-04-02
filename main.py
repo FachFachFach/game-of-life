@@ -2,11 +2,16 @@
 gol - John Conway's game of life
 
 1. add documentation
+2. add reset button
 """
 
 
-
-
+##############################################
+#                                            #
+# press SPACE to start the simulation        #
+# press RETURN to go back to the game intro  #
+#                                            #
+##############################################
 import pygame as pg
 from sys import exit
 from math import floor
@@ -19,7 +24,7 @@ white = (255, 255, 255)
 black = (0, 0, 0)
 
 clock = pg.time.Clock()
-tick = 4
+#tick = 5
 window_title = pg.display.set_caption('gol')
 dw = 1000 # display width
 dh = 1000 # display height
@@ -152,6 +157,9 @@ class Game:
 		self.game_loop()
 
 	def game_intro(self):
+		# cell drawing:
+
+		tick = 6
 		running = True
 		while running:
 			for event in pg.event.get():
@@ -179,6 +187,9 @@ class Game:
 
 
 	def game_loop(self):
+		# cell simulation/interaction:
+
+		tick = 4
 		running = True
 		while running:
 			
@@ -188,6 +199,11 @@ class Game:
 					pg.quit()
 					exit()
 			
+				if event.type == pg.KEYUP:
+					if event.key == pg.K_RETURN:
+						gameDisplay.fill(white)
+						self.game_intro()
+
 			self.board.update()
 			pg.display.update()
 			clock.tick(tick)
