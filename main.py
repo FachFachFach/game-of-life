@@ -2,7 +2,7 @@
 gol - John Conway's game of life
 
 1. add documentation
-2. add reset button
+2. if dw !== dh, the cells get streched --> needs fix.
 """
 
 
@@ -40,6 +40,10 @@ row_size = dh/ num_row
 
 
 class Board:
+	"""
+	the board refers to the white screen on which the game of life simulation is accurring.
+	this board contains many cells that together totally cover the board.
+	"""
 	def __init__(self, cul_size, row_size, num_cul, num_row):
 		self.cul_size = cul_size
 		self.row_size = row_size
@@ -87,11 +91,21 @@ class Board:
 			
 		for i in l:
 			i.update_state()
-		
+	
+	def reset_game_state(self):
+		# returns the game state to it's original state (ie. all cell states as 0)
+		for i in self.game_state.keys():
+			cell = self.game_state.get(i)
+			cell.state = 0
+		print('game_state reset')
 	
 
 
 class Cell:
+	"""
+	cells are instantiated inside the Board class instance.
+	a cell contains information about it's state and position.
+	"""
 	def __init__(self, x, y, cls):
 		self.x = x
 		self.y = y
@@ -154,11 +168,11 @@ class Game:
 		self.board = Board(cul_size, row_size, num_cul, num_row)
 		pg.init()
 		self.game_intro()
-		self.game_loop()
+		#self.game_loop()
 
 	def game_intro(self):
-		# cell drawing:
-
+		# cell drawing stage:
+		print('game_intro called')
 		tick = 6
 		running = True
 		while running:
@@ -184,10 +198,11 @@ class Game:
 		
 			pg.display.update()
 			clock.tick(tick)
-
+		
+		self.game_loop()
 
 	def game_loop(self):
-		# cell simulation/interaction:
+		# cell simulation/interaction stage:
 
 		tick = 4
 		running = True
@@ -201,6 +216,8 @@ class Game:
 			
 				if event.type == pg.KEYUP:
 					if event.key == pg.K_RETURN:
+						# if RETURN pressed, restart game (call self.game_intro()) 
+						self.board.reset_game_state()
 						gameDisplay.fill(white)
 						self.game_intro()
 
